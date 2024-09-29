@@ -10,4 +10,8 @@ def get():
     )
 
 if __name__ == "__main__":
-    serve()
+    content = get()
+    if isinstance(content, tuple):
+        content = ''.join(str(item) for item in content)
+    print(content)
+
