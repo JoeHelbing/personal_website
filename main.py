@@ -36,17 +36,20 @@ css = Style(
         max-width: 600px;
         margin: 20px auto;
         padding: 15px;
-        background-color: #f0f0f0;
+        background-color: #f8f8f8;
         border: 1px solid #ddd;
         border-radius: 5px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     .instructions-box h2 {
         margin-top: 0;
-        color: #333;
+        color: #222;
     }
     .instructions-box ul {
         padding-left: 20px;
+    }
+    .instructions-box p, .instructions-box li {
+        color: #333;
     }
 """
 )
