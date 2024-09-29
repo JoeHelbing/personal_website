@@ -4,19 +4,25 @@ import sys
 
 app, rt = fast_app()
 
+
 @rt("/")
 def get():
-    return Titled("Welcome", 
+    return Titled(
+        "Welcome",
         H1("Hello World!"),
         P("Welcome to my website powered by FastHTML."),
-        P("The game of life running below is lifted from Jerermy Howard https://github.com/AnswerDotAI/fasthtml-example/commits?author=jph00"),
-        P("I'm just experimenting for the moment.")
+        P(
+            "The game of life running below is lifted from Jerermy Howard https://github.com/AnswerDotAI/fasthtml-example/commits?author=jph00"
+        ),
+        P("I'm just experimenting for the moment."),
     )
 
 
-if __name__ == "__main__": sys.exit("Run this app with `uvicorn main:app`")
+if __name__ == "__main__":
+    sys.exit("Run this app with `uvicorn main:app`")
 
-css = Style('''
+css = Style(
+    """
     body, html { height: 100%; margin: 0; }
     body { display: flex; flex-direction: column; }
     main { flex: 1 0 auto; }
@@ -26,91 +32,227 @@ css = Style('''
     .cell { width: 20px; height: 20px; border: 1px solid black; }
     .alive { background-color: green; }
     .dead { background-color: white; }
-''')
-gridlink = Link(rel="stylesheet", href="https://cdnjs.cloudflare.com/ajax/libs/flexboxgrid/6.3.1/flexboxgrid.min.css", type="text/css")
+    .instructions-box {
+        max-width: 600px;
+        margin: 20px auto;
+        padding: 15px;
+        background-color: #f0f0f0;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .instructions-box h2 {
+        margin-top: 0;
+        color: #333;
+    }
+    .instructions-box ul {
+        padding-left: 20px;
+    }
+"""
+)
+gridlink = Link(
+    rel="stylesheet",
+    href="https://cdnjs.cloudflare.com/ajax/libs/flexboxgrid/6.3.1/flexboxgrid.min.css",
+    type="text/css",
+)
 htmx_ws = Script(src="https://unpkg.com/htmx-ext-ws@2.0.0/ws.js")
 app = FastHTML(hdrs=(picolink, gridlink, css, htmx_ws))
 rt = app.route
 
-game_state = {'running': False, 'grid': [[0 for _ in range(20)] for _ in range(20)]}
+game_state = {"running": False, "grid": [[0 for _ in range(20)] for _ in range(20)]}
+
+# Set up the glider pattern
+glider_pattern = [(1, 0), (2, 1), (0, 2), (1, 2), (2, 2)]
+for x, y in glider_pattern:
+    game_state["grid"][y][x] = 1
+
+
 def update_grid(grid: list[list[int]]) -> list[list[int]]:
     new_grid = [[0 for _ in range(20)] for _ in range(20)]
+
     def count_neighbors(x, y):
-        directions = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
+        directions = [
+            (-1, -1),
+            (-1, 0),
+            (-1, 1),
+            (0, -1),
+            (0, 1),
+            (1, -1),
+            (1, 0),
+            (1, 1),
+        ]
         count = 0
         for dx, dy in directions:
             nx, ny = x + dx, y + dy
-            if 0 <= nx < len(grid) and 0 <= ny < len(grid[0]): count += grid[nx][ny]
+            if 0 <= nx < len(grid) and 0 <= ny < len(grid[0]):
+                count += grid[nx][ny]
         return count
+
     for i in range(len(grid)):
         for j in range(len(grid[0])):
             neighbors = count_neighbors(i, j)
             if grid[i][j] == 1:
-                if neighbors < 2 or neighbors > 3: new_grid[i][j] = 0
-                else: new_grid[i][j] = 1
-            elif neighbors == 3: new_grid[i][j] = 1
+                if neighbors < 2 or neighbors > 3:
+                    new_grid[i][j] = 0
+                else:
+                    new_grid[i][j] = 1
+            elif neighbors == 3:
+                new_grid[i][j] = 1
     return new_grid
+
 
 def Grid():
     cells = []
-    for y, row in enumerate(game_state['grid']):
+    for y, row in enumerate(game_state["grid"]):
         for x, cell in enumerate(row):
-            cell_class = 'alive' if cell else 'dead'
-            cell = Div(cls=f'cell {cell_class}', hx_put='/update', hx_vals={'x': x, 'y': y}, hx_swap='none', hx_target='#gol', hx_trigger='click')
+            cell_class = "alive" if cell else "dead"
+            cell = Div(
+                cls=f"cell {cell_class}",
+                hx_put="/update",
+                hx_vals={"x": x, "y": y},
+                hx_swap="none",
+                hx_target="#gol",
+                hx_trigger="click",
+            )
             cells.append(cell)
-    return Div(*cells, id='grid')
+    return Div(*cells, id="grid")
+
 
 def Home():
-    gol = Div(Grid(), id='gol', cls='row center-xs')
-    run_btn = Button('Run', id='run', cls='col-xs-2', hx_put='/run', hx_target='#gol', hx_swap='none')
-    pause_btn = Button('Pause', id='pause', cls='col-xs-2', hx_put='/pause', hx_target='#gol', hx_swap='none')
-    reset_btn = Button('Reset', id='reset', cls='col-xs-2', hx_put='/reset', hx_target='#gol', hx_swap='none')
-    main = Main(gol, Div(run_btn, pause_btn, reset_btn, cls='row center-xs'), hx_ext="ws", ws_connect="/gol")
-    footer = Footer(P('Made by Nathan Cooper. Check out the code', AX('here', href='https://github.com/AnswerDotAI/fasthtml-example/tree/main/game_of_life', target='_blank')))
-    return Title('Game of Life'), main, footer
+    welcome = Titled(
+        "Welcome",
+        H1("Hello World!"),
+        P("Welcome to my website powered by FastHTML."),
+        P(
+            "The game of life running below is lifted from Jeremy Howard https://github.com/AnswerDotAI/fasthtml-example/commits?author=jph00"
+        ),
+        P("I'm just experimenting for the moment."),
+    )
 
-@rt('/')
-def get(): return Home()
+    instructions = Div(
+        H2("How to Play"),
+        P(
+            "Conway's Game of Life is a cellular automaton simulation. Here's how to interact with it:"
+        ),
+        Ul(
+            Li("Click on cells to toggle them between alive (green) and dead (white)."),
+            Li("Use the 'Run' button to start the simulation."),
+            Li("'Pause' will stop the simulation at its current state."),
+            Li("'Reset' will clear the grid, allowing you to start over."),
+        ),
+        P(
+            "Watch as patterns evolve and see if you can create stable configurations or interesting behaviors!"
+        ),
+        cls="instructions-box",
+    )
+
+    gol = Div(Grid(), id="gol", cls="row center-xs")
+    run_btn = Button(
+        "Run", id="run", cls="col-xs-2", hx_put="/run", hx_target="#gol", hx_swap="none"
+    )
+    pause_btn = Button(
+        "Pause",
+        id="pause",
+        cls="col-xs-2",
+        hx_put="/pause",
+        hx_target="#gol",
+        hx_swap="none",
+    )
+    reset_btn = Button(
+        "Reset",
+        id="reset",
+        cls="col-xs-2",
+        hx_put="/reset",
+        hx_target="#gol",
+        hx_swap="none",
+    )
+    main = Main(
+        welcome,
+        instructions,
+        gol,
+        Div(run_btn, pause_btn, reset_btn, cls="row center-xs"),
+        hx_ext="ws",
+        ws_connect="/gol",
+    )
+    footer = Footer(
+        P(
+            "Made by Nathan Cooper. Check out the code ",
+            AX(
+                "here",
+                href="https://github.com/AnswerDotAI/fasthtml-example/tree/main/game_of_life",
+                target="_blank",
+            ),
+        )
+    )
+    return Title("Joe Helbing Screwing Around"), main, footer
+
+
+@rt("/")
+def get():
+    return Home()
+
 
 player_queue = []
+
+
 async def update_players():
     for i, player in enumerate(player_queue):
-        try: await player(Grid())
-        except: player_queue.pop(i)
-async def on_connect(send): player_queue.append(send)
-async def on_disconnect(send): await update_players()
+        try:
+            await player(Grid())
+        except:
+            player_queue.pop(i)
 
-@app.ws('/gol', conn=on_connect, disconn=on_disconnect)
-async def ws(msg:str, send): pass
+
+async def on_connect(send):
+    player_queue.append(send)
+
+
+async def on_disconnect(send):
+    await update_players()
+
+
+@app.ws("/gol", conn=on_connect, disconn=on_disconnect)
+async def ws(msg: str, send):
+    pass
+
 
 async def background_task():
     while True:
-        if game_state['running'] and len(player_queue) > 0:
-            game_state['grid'] = update_grid(game_state['grid'])
+        if game_state["running"] and len(player_queue) > 0:
+            game_state["grid"] = update_grid(game_state["grid"])
             await update_players()
         await asyncio.sleep(1.0)
 
+
 background_task_coroutine = asyncio.create_task(background_task())
 
-@rt('/update')
+
+@rt("/update")
 async def put(x: int, y: int):
-    game_state['grid'][y][x] = 1 if game_state['grid'][y][x] == 0 else 0
+    game_state["grid"][y][x] = 1 if game_state["grid"][y][x] == 0 else 0
     await update_players()
 
-@rt('/run')
+
+@rt("/run")
 async def put():
-    game_state['running'] = True
+    game_state["running"] = True
     await update_players()
+
 
 @rt("/reset")
 async def put():
-    game_state['grid'] = [[0 for _ in range(20)] for _ in range(20)]
-    game_state['running'] = False
+    game_state["grid"] = [[0 for _ in range(20)] for _ in range(20)]
+    # Reset to the glider pattern
+    for x, y in glider_pattern:
+        game_state["grid"][y][x] = 1
+    game_state["running"] = False
     await update_players()
 
-@rt('/pause')
+
+@rt("/pause")
 async def put():
-    game_state['running'] = False
+    game_state["running"] = False
     await update_players()
+
 
 serve()
