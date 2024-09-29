@@ -6,7 +6,7 @@ app, rt = fast_app()
 def get():
     return Titled("Welcome", 
         H1("Hello World!"),
-        P("Welcome to my GitHub Pages site powered by FastHTML.")
+        P("Welcome to my website powered by FastHTML.")
     )
 
 serve()
