@@ -224,7 +224,7 @@ async def background_task():
         if game_state["running"] and len(player_queue) > 0:
             game_state["grid"] = update_grid(game_state["grid"])
             await update_players()
-        await asyncio.sleep(1.0)
+        await asyncio.sleep(0.3)
 
 
 background_task_coroutine = asyncio.create_task(background_task())
