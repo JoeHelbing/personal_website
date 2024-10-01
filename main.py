@@ -4,23 +4,6 @@ import sys
 
 app, rt = fast_app()
 
-
-@rt("/")
-def get():
-    return Titled(
-        "Welcome",
-        H1("Hello World!"),
-        P("Welcome to my website powered by FastHTML."),
-        P(
-            "The game of life running below is lifted from Jerermy Howard https://github.com/AnswerDotAI/fasthtml-example/commits?author=jph00"
-        ),
-        P("I'm just experimenting for the moment."),
-    )
-
-
-if __name__ == "__main__":
-    sys.exit("Run this app with `uvicorn main:app`")
-
 css = Style(
     """
     body, html { height: 100%; margin: 0; }
@@ -50,6 +33,21 @@ css = Style(
     }
     .instructions-box p, .instructions-box li {
         color: #333;
+    }
+    #game-of-life-container {
+        display: none;
+    }
+    #show-game-button {
+        margin: 20px auto;
+        display: block;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+    }
+    #show-game-button:hover {
+        transform: scale(1.05);
+    }
+    .game-button-container {
+        text-align: center;
     }
 """
 )
@@ -126,12 +124,48 @@ def Home():
         "Welcome",
         H1("Hello World!"),
         P("Welcome to my website powered by FastHTML."),
-        P(
-            "The game of life running below is lifted from Jeremy Howard https://github.com/AnswerDotAI/fasthtml-example/commits?author=jph00"
-        ),
         P("I'm just experimenting for the moment."),
     )
 
+    show_game_button = Div(
+        H2("Interactive Game of Life"),
+        Img(
+            src="./images/game_of_life.webp",
+            alt="Game of Life",
+            id="show-game-button",
+            hx_get="/game-of-life",
+            hx_target="#game-of-life-container",
+            hx_swap="innerHTML",
+        ),
+        cls="game-button-container"
+    )
+
+    game_of_life_container = Div(id="game-of-life-container")
+
+    main = Main(
+        welcome,
+        show_game_button,
+        game_of_life_container,
+    )
+
+    footer = Footer(
+        P(
+            "Made by Nathan Cooper. Check out the code ",
+            AX(
+                "here",
+                href="https://github.com/AnswerDotAI/fasthtml-example/tree/main/game_of_life",
+                target="_blank",
+            ),
+        )
+    )
+    return Title("Joe Helbing Screwing Around"), main, footer
+
+@rt("/")
+def get():
+    return Home()
+
+@rt("/game-of-life")
+def get():
     instructions = Div(
         H2("How to Play"),
         P(
@@ -169,30 +203,14 @@ def Home():
         hx_target="#gol",
         hx_swap="none",
     )
-    main = Main(
-        welcome,
+    
+    return Div(
         instructions,
         gol,
         Div(run_btn, pause_btn, reset_btn, cls="row center-xs"),
         hx_ext="ws",
         ws_connect="/gol",
     )
-    footer = Footer(
-        P(
-            "Made by Nathan Cooper. Check out the code ",
-            AX(
-                "here",
-                href="https://github.com/AnswerDotAI/fasthtml-example/tree/main/game_of_life",
-                target="_blank",
-            ),
-        )
-    )
-    return Title("Joe Helbing Screwing Around"), main, footer
-
-
-@rt("/")
-def get():
-    return Home()
 
 
 player_queue = []
@@ -257,5 +275,9 @@ async def put():
     game_state["running"] = False
     await update_players()
 
+
+@rt("/images/{fname:path}.{ext:static}")
+def get(fname:str, ext:str): 
+    return FileResponse(f'images/{fname}.{ext}')
 
 serve()
